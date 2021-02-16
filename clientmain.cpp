@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 {
 	if (argc != 2) 
 	{
-	  fprintf(stderr,"usage: %s hostname (%d)\n",argv[0],argc);
+	  fprintf(stderr,"usage: %s hostname (%d)\n",argv[0], argc);
 	  exit(1);
 	}
 
@@ -27,6 +27,18 @@ int main(int argc, char *argv[])
   char *Desthost = strtok(argv[1],delim);
   char *Destport = strtok(NULL,delim);
   int port = atoi(Destport);
+
+  if (Desthost == NULL)
+  {
+    perror("Host  missing");
+    exit(1);
+  }
+
+  if (Destport == NULL)
+  {
+    perror("Port missing");
+    exit(1);
+  }
 
 #ifdef DEBUG 
   printf("Host %s, and port %d.\n",Desthost,port);
@@ -38,14 +50,15 @@ int main(int argc, char *argv[])
 	char buf[264];
   char msg[] = "OK\n";
 
-	memset(&hints, 0, sizeof hints);
+	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if ((getaddrinfo(argv[1], Destport, &hints, &servinfo)) != 0) 
+  int rv;
+	if ((rv = (getaddrinfo(Desthost, Destport, &hints, &servinfo))) == -1) 
 	{
-    perror("Faulty port or ip");
-		return 1;
+    fprintf(stderr,"getaddrinfo: %s\n", gai_strerror(rv));
+		exit(1);
 	}
 
   for(p = servinfo; p != NULL; p = p->ai_next) 
