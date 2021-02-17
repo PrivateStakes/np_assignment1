@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <calcLib.h>
 #include <string>
+#include <cstring>
+
 
 #define DEBUG
 
@@ -26,11 +28,10 @@ int main(int argc, char *argv[])
   char delim[] = ":";
   char *Desthost = strtok(argv[1],delim);
   char *Destport = strtok(NULL,delim);
-  int port = atoi(Destport);
 
   if (Desthost == NULL)
   {
-    perror("Host  missing");
+    perror("Host missing");
     exit(1);
   }
 
@@ -39,9 +40,10 @@ int main(int argc, char *argv[])
     perror("Port missing");
     exit(1);
   }
+  int port = atoi(Destport);
 
 #ifdef DEBUG 
-  printf("Host %s, and port %d.\n",Desthost,port);
+  printf("Host %s, and port %d.\n", Desthost, port);
 #endif
 
 	int sockfd;
@@ -65,19 +67,18 @@ int main(int argc, char *argv[])
   {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
     {
-      perror("client: socket");
+      perror("failed to bind to socket");
       continue;
     }
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) 
     {
       close(sockfd);
-      perror("client: connect");
+      perror("failed to connect to server");
       continue;
     }
     break;
   }
-    
 
   if (p == NULL) 
   {
@@ -100,7 +101,16 @@ int main(int argc, char *argv[])
     if (strcmp(buf, "TEXT TCP 1.0\n\n") == 0 || strcmp(buf, "TEXT TCP 1.1\n\n") == 0)
     {
       #ifdef DEBUG
-      printf("Connected to %s:%s\n", Desthost, Destport);
+      struct sockaddr_in clien_address;
+      socklen_t clien_addresslen = sizeof(clien_address);
+      getsockname(sockfd, (struct sockaddr*)&clien_address, &clien_addresslen);
+
+      char dbuf[256];
+      const char* q = nullptr;
+      if ((q = inet_ntop(AF_INET, &clien_address.sin_addr, dbuf, sizeof(buf))) != NULL) 
+      printf("Connected to %s:%s from local ip %s:%d\n", Desthost, Destport, dbuf, ntohs(clien_address.sin_port));
+      else perror("failed to access local ip address");
+      
       #endif
     }
     else 
